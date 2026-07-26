@@ -12,21 +12,16 @@
     button:disabled { background: #475569; cursor: not-allowed; }
     .hidden { display: none !important; }
     .payout { font-size: 32px; color: #22c55e; font-weight: bold; margin: 15px 0; }
-    #error-log { color: #ef4444; margin-top: 20px; font-size: 14px; }
+    #error-log { color: #ef4444; margin-top: 20px; font-size: 14px; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <h1>🎰 Arcade Controller</h1>
-
-  <!-- Loading Message (Disappears when Firebase loads) -->
-  <div id="loading-msg">Connecting to Firebase...<br>(If this stays here, check you are not using a file:// URL)</div>
-
-  <!-- Error Display -->
   <div id="error-log"></div>
 
   <!-- Login Section -->
-  <div id="login-section" class="card hidden">
+  <div id="login-section" class="card">
     <p>Authentication Required</p>
     <button id="login-btn">Log in with Google</button>
   </div>
@@ -48,28 +43,26 @@
   </div>
 
   <script type="module">
+    // Imports MUST be at the very top!
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBaavj-Y8151BtZWf_oBBM60Rj7zePTUXY",
+      authDomain: "spinnywheel-arcade.firebaseapp.com",
+      projectId: "spinnywheel-arcade",
+      storageBucket: "spinnywheel-arcade.firebasestorage.app",
+      messagingSenderId: "170642862625",
+      appId: "1:170642862625:web:bc8f72daf10d3dc6d7e960",
+      measurementId: "G-SFJ8PWVRVR"
+    };
+
     try {
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-      import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyBaavj-Y8151BtZWf_oBBM60Rj7zePTUXY",
-        authDomain: "spinnywheel-arcade.firebaseapp.com",
-        projectId: "spinnywheel-arcade",
-        storageBucket: "spinnywheel-arcade.firebasestorage.app",
-        messagingSenderId: "170642862625",
-        appId: "1:170642862625:web:bc8f72daf10d3dc6d7e960",
-        measurementId: "G-SFJ8PWVRVR"
-      };
-
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
       const ALLOWED_EMAIL = "littendekitten@gmail.com";
-
-      // Hide loading message once scripts execute
-      document.getElementById('loading-msg').classList.add('hidden');
 
       const loginBtn = document.getElementById('login-btn');
       const loginSection = document.getElementById('login-section');
@@ -103,7 +96,7 @@
         if (isNaN(paid) || paid <= 0) return alert('Enter a valid paid amount');
 
         spinBtn.disabled = true;
-        document.getElementById('error-log').innerText = ""; // clear errors
+        document.getElementById('error-log').innerText = ""; 
 
         // Multiplier options: 0.0x to 1.5x
         const multiplier = Math.floor(Math.random() * 16) / 10;
@@ -125,9 +118,8 @@
           spinBtn.disabled = false;
         }
       });
-
     } catch (error) {
-      document.getElementById('error-log').innerText = "Script load error: " + error.message;
+      document.getElementById('error-log').innerText = "App Init Error: " + error.message;
     }
   </script>
 </body>
