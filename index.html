@@ -1,72 +1,134 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Phone Controller</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    input { width: 80%; padding: 12px; font-size: 18px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; text-align: center; margin: 10px 0; }
+    button { background: #2563eb; color: white; border: none; padding: 14px 28px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 85%; margin-top: 10px; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    .hidden { display: none !important; }
+    .payout { font-size: 32px; color: #22c55e; font-weight: bold; margin: 15px 0; }
+    #error-log { color: #ef4444; margin-top: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBaavj-Y8151BtZWf_oBBM60Rj7zePTUXY",
-    authDomain: "spinnywheel-arcade.firebaseapp.com",
-    projectId: "spinnywheel-arcade",
-    storageBucket: "spinnywheel-arcade.firebasestorage.app",
-    messagingSenderId: "170642862625",
-    appId: "1:170642862625:web:bc8f72daf10d3dc6d7e960",
-    measurementId: "G-SFJ8PWVRVR"
-  };
+  <h1>🎰 Arcade Controller</h1>
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const ALLOWED_EMAIL = "littendekitten@gmail.com";
+  <!-- Loading Message (Disappears when Firebase loads) -->
+  <div id="loading-msg">Connecting to Firebase...<br>(If this stays here, check you are not using a file:// URL)</div>
 
-  const loginBtn = document.getElementById('login-btn');
-  const loginSection = document.getElementById('login-section');
-  const appSection = document.getElementById('app-section');
-  const userEmailText = document.getElementById('user-email');
-  const spinBtn = document.getElementById('spin-btn');
+  <!-- Error Display -->
+  <div id="error-log"></div>
 
-  loginBtn.addEventListener('click', () => {
-    signInWithPopup(auth, new GoogleAuthProvider());
-  });
+  <!-- Login Section -->
+  <div id="login-section" class="card hidden">
+    <p>Authentication Required</p>
+    <button id="login-btn">Log in with Google</button>
+  </div>
 
-  onAuthStateChanged(auth, (user) => {
-    if (user && user.email === ALLOWED_EMAIL) {
-      loginSection.classList.add('hidden');
-      appSection.classList.remove('hidden');
-      userEmailText.innerText = `Logged in as: ${user.email}`;
-    } else {
-      loginSection.classList.remove('hidden');
-      appSection.classList.add('hidden');
-      if (user && user.email !== ALLOWED_EMAIL) {
-        alert(`Access Denied: ${user.email} is not authorized.`);
-        auth.signOut();
-      }
-    }
-  });
+  <!-- App Section -->
+  <div id="app-section" class="card hidden">
+    <p id="user-email" style="font-size: 12px; color: #94a3b8;"></p>
+    
+    <label>Amount Paid (€):</label><br>
+    <input type="number" id="paid-amount" value="1.00" step="0.10" min="0.10">
 
-  spinBtn.addEventListener('click', async () => {
-    const paid = parseFloat(document.getElementById('paid-amount').value);
-    if (isNaN(paid) || paid <= 0) return alert('Enter a valid paid amount');
+    <br><br>
+    <button id="spin-btn">SPIN WHEEL</button>
 
-    spinBtn.disabled = true;
+    <div id="result" class="hidden">
+      <p style="margin-bottom:0;">Payout to Customer:</p>
+      <div id="payout-amount" class="payout">€0.00</div>
+    </div>
+  </div>
 
-    // Multiplier options: 0.0x to 1.5x
-    const multiplier = Math.floor(Math.random() * 16) / 10;
-    const won = parseFloat((paid * multiplier).toFixed(2));
-
-    document.getElementById('payout-amount').innerText = `€${won.toFixed(2)}`;
-    document.getElementById('result').classList.remove('hidden');
-
+  <script type="module">
     try {
-      await addDoc(collection(db, "spins"), {
-        pricePaid: paid,
-        priceWon: won,
-        profit: parseFloat((paid - won).toFixed(2)),
-        timestamp: serverTimestamp()
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+      import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBaavj-Y8151BtZWf_oBBM60Rj7zePTUXY",
+        authDomain: "spinnywheel-arcade.firebaseapp.com",
+        projectId: "spinnywheel-arcade",
+        storageBucket: "spinnywheel-arcade.firebasestorage.app",
+        messagingSenderId: "170642862625",
+        appId: "1:170642862625:web:bc8f72daf10d3dc6d7e960",
+        measurementId: "G-SFJ8PWVRVR"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const ALLOWED_EMAIL = "littendekitten@gmail.com";
+
+      // Hide loading message once scripts execute
+      document.getElementById('loading-msg').classList.add('hidden');
+
+      const loginBtn = document.getElementById('login-btn');
+      const loginSection = document.getElementById('login-section');
+      const appSection = document.getElementById('app-section');
+      const userEmailText = document.getElementById('user-email');
+      const spinBtn = document.getElementById('spin-btn');
+
+      loginBtn.addEventListener('click', () => {
+        signInWithPopup(auth, new GoogleAuthProvider()).catch(err => {
+          document.getElementById('error-log').innerText = "Login error: " + err.message;
+        });
       });
-    } catch (err) {
-      alert("Failed to save spin: " + err.message);
-    } finally {
-      spinBtn.disabled = false;
+
+      onAuthStateChanged(auth, (user) => {
+        if (user && user.email === ALLOWED_EMAIL) {
+          loginSection.classList.add('hidden');
+          appSection.classList.remove('hidden');
+          userEmailText.innerText = `Logged in as: ${user.email}`;
+        } else {
+          loginSection.classList.remove('hidden');
+          appSection.classList.add('hidden');
+          if (user && user.email !== ALLOWED_EMAIL) {
+            alert(`Access Denied: ${user.email} is not authorized.`);
+            auth.signOut();
+          }
+        }
+      });
+
+      spinBtn.addEventListener('click', async () => {
+        const paid = parseFloat(document.getElementById('paid-amount').value);
+        if (isNaN(paid) || paid <= 0) return alert('Enter a valid paid amount');
+
+        spinBtn.disabled = true;
+        document.getElementById('error-log').innerText = ""; // clear errors
+
+        // Multiplier options: 0.0x to 1.5x
+        const multiplier = Math.floor(Math.random() * 16) / 10;
+        const won = parseFloat((paid * multiplier).toFixed(2));
+
+        document.getElementById('payout-amount').innerText = `€${won.toFixed(2)}`;
+        document.getElementById('result').classList.remove('hidden');
+
+        try {
+          await addDoc(collection(db, "spins"), {
+            pricePaid: paid,
+            priceWon: won,
+            profit: parseFloat((paid - won).toFixed(2)),
+            timestamp: serverTimestamp()
+          });
+        } catch (err) {
+          document.getElementById('error-log').innerText = "Database error: " + err.message;
+        } finally {
+          spinBtn.disabled = false;
+        }
+      });
+
+    } catch (error) {
+      document.getElementById('error-log').innerText = "Script load error: " + error.message;
     }
-  });
-</script>
+  </script>
+</body>
+</html>
